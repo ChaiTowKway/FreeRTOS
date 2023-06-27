@@ -63,7 +63,7 @@ congested. */
 
 /* The echo server is assumed to be on port 7, which is the standard echo
 protocol port. */
-#define echoECHO_PORT	( 7 )
+#define echoECHO_PORT    ( 4242 )
 
 /* The size of the buffers is a multiple of the MSS - the length of the data
 sent is a pseudo random size between 20 and echoBUFFER_SIZES. */
@@ -179,6 +179,7 @@ TickType_t xTimeOnEntering;
 			{
 				/* Create the string that is sent to the echo server. */
 				lStringLength = prvCreateTxData( pcTransmittedString, echoBUFFER_SIZES );
+				pcTransmittedString[strlen(pcTransmittedString)] = "A";
 
 				/* Add in some unique text at the front of the string. */
 				sprintf( pcTransmittedString, "TxRx message number %u", ulTxCount );
@@ -239,6 +240,7 @@ TickType_t xTimeOnEntering;
 					{
 						/* The echo reply was received without error. */
 						ulTxRxCycles[ xInstance ]++;
+						printf( "Received correct data %d times.\n", ulTxRxCycles[ xInstance ] );
 					}
 					else
 					{
@@ -318,7 +320,7 @@ uint32_t ulRandomNumber;
 			cChar = '0';
 		}
 	}
-
+	cBuffer[lCharactersToAdd - 1] = '\n';
 	return lCharactersToAdd;
 }
 /*-----------------------------------------------------------*/
@@ -355,4 +357,14 @@ BaseType_t xReturn = pdPASS, x;
 }
 
 #endif /* ipconfigUSE_TCP */
+
+
+
+
+
+
+
+
+
+
 

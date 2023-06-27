@@ -77,14 +77,14 @@ extern void vLoggingPrintf( const char * pcFormatString,
  *
  * #define democonfigSERVER_HOSTNAME    "...insert here..."
  */
-
+#define democonfigSERVER_HOSTNAME    "127.0.0.1"
 /**
  * @brief HTTP server port number.
  *
  * @note In general, port 80 is for plaintext HTTP connections.
  */
 #ifndef democonfigHTTP_PORT
-    #define democonfigHTTP_PORT    ( 80 )
+    #define democonfigHTTP_PORT    ( 8080 )
 #endif
 
 /**

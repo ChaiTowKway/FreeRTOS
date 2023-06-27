@@ -56,3 +56,6 @@ __pycache__/
 
 # Renesas IDE temporary files
 *.nav
+
+# Ignore glib build results
+FreeRTOS-Plus\ThirdParty\glib\build

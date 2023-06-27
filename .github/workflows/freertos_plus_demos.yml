@@ -88,6 +88,49 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
 
+      - name: Generate SSL credentials
+        id: generate-credentials
+        uses: FreeRTOS/CI-CD-GitHub-Actions/ssl-credential-creator@main
+
+      - name: Start localhost HTTP server
+        id: http-server
+        uses: FreeRTOS/CI-CD-GitHub-Actions/localhost-http-1.1-server@main
+        with:
+          root-ca-cert-path: ${{ steps.generate-credentials.outputs.root-ca-cert-path }}
+          server-priv-key-path: ${{ steps.generate-credentials.outputs.server-priv-key-path }}
+          server-cert-path: ${{ steps.generate-credentials.outputs.server-cert-path }}
+
+      - name: Install meson
+        run: |
+          pip install meson
+
+      - name: Install Glib
+        run: |
+          cd FreeRTOS-Plus/ThirdParty/glib
+          meson setup build --backend=vs
+          cd build
+          meson compile
+
+      - name: Update main.c to force stdout to write immediately
+        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/Common
+        run: |
+          $content = Get-Content -Path 'main.c' -Raw
+          $newContent = $content -replace 'int\s+main(.*?)void(.*?)\r?\n\s*{', 'int main( void ){setvbuf( stdout, NULL, _IONBF, 0 );'
+          $newContent | Set-Content -Path 'main.c'
+
+      - name: Build HTTP Plain Text Demo
+        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_Plaintext
+        run: msbuild http_plain_text_demo.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
+
+      - name: Run and monitor HTTP Plain Text Demo
+        if: success() || failure() && steps.build-mqtt-plain-text-demo.outcome == 'success'
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
+        with:
+          exe-path: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_Plaintext/x64/Debug/CoreHTTP_Plaintext.exe
+          log-dir: demo_run_logs
+          timeout-seconds: 300
+          success-line: "Demo completed successfully"
+
       - name: Configure coreHTTP Demos
         shell: bash
         working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator
@@ -201,6 +244,51 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
 
+      - name: Generate SSL credentials
+        id: generate-credentials
+        uses: FreeRTOS/CI-CD-GitHub-Actions/ssl-credential-creator@main
+
+      - name: Start localhost MQTT broker
+        id: mqtt-broker
+        uses: FreeRTOS/CI-CD-GitHub-Actions/localhost-mqtt-broker@main
+        with:
+          root-ca-cert-path: ${{ steps.generate-credentials.outputs.root-ca-cert-path }}
+          server-priv-key-path: ${{ steps.generate-credentials.outputs.server-priv-key-path }}
+          server-cert-path: ${{ steps.generate-credentials.outputs.server-cert-path }}
+
+      - name: Install meson
+        run: |
+          pip install meson
+
+      - name: Install Glib
+        run: |
+          cd FreeRTOS-Plus/ThirdParty/glib
+          meson setup build --backend=vs
+          cd build
+          meson compile
+
+      - name: Update main.c to force stdout to write immediately
+        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/Common
+        run: |
+          $content = Get-Content -Path 'main.c' -Raw
+          $newContent = $content -replace 'int\s+main(.*?)void(.*?)\r?\n\s*{', 'int main( void ){setvbuf( stdout, NULL, _IONBF, 0 );'
+          $newContent | Set-Content -Path 'main.c'
+
+      - name: Build MQTT Plain Text Demo
+        id: build-mqtt-plain-text-demo
+        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Plain_Text
+        run: |
+          msbuild mqtt_plain_text_demo.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
+
+      - name: Run and monitor MQTT Plain Text Demo
+        if: success() || failure() && steps.build-mqtt-plain-text-demo.outcome == 'success'
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
+        with:
+          exe-path: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Plain_Text/x64/Debug/MQTT_Plain_Text.exe
+          log-dir: demo_run_logs
+          timeout-seconds: 300
+          success-line: "Demo completed successfully"
+
       - name: Configure coreMQTT Demos
         shell: bash
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator
@@ -236,10 +324,6 @@ jobs:
       - name: Build MQTT Mutual Authentication with WolfSSL Demo
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Mutual_Auth_wolfSSL
         run: msbuild mqtt_mutual_auth_demo_wolfSSL.sln -t:rebuild -property:Configuration=Debug -m
-
-      - name: Build MQTT Plain Text Demo
-        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Plain_Text
-        run: msbuild mqtt_plain_text_demo.sln -t:rebuild -property:Configuration=Debug -m
 
       - name: Build MQTT Serializer Demo
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Serializer
@@ -445,9 +529,42 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
 
+      - name: Set up Echo Server
+        run: |
+          choco install netcat
+          nc -vvklp 5000 -e cmd.exe &
+          
+      - name: Install meson
+        run: |
+          pip install meson
+
+      - name: Install Glib
+        run: |
+          cd FreeRTOS-Plus/ThirdParty/glib
+          meson setup build --backend=vs
+          cd build
+          meson compile
+
       - name: Build FreeRTOS+TCP Minimal Demo
+        id: build-plus-tcp-minimal-demo
         working-directory: FreeRTOS-Plus/Demo/FreeRTOS_Plus_TCP_Minimal_Windows_Simulator
-        run: msbuild FreeRTOS_Plus_TCP_Minimal.sln -t:rebuild -property:Configuration=Debug -m
+        run: |
+          $content = Get-Content -Path 'DemoTasks\TCPEchoClient_SingleTasks.c' -Raw
+          $newContent = $content -replace '#define\s+echoECHO_PORT\s*(.*?)7(.*?)\r', '#define echoECHO_PORT	( 4242 )'
+          $newContent | Set-Content -Path 'DemoTasks\TCPEchoClient_SingleTasks.c'
+          $content = Get-Content -Path 'main.c' -Raw
+          $newContent = $content -replace 'int\s+main(.*?)void(.*?)\r?\n\s*{', 'int main( void ){setvbuf( stdout, NULL, _IONBF, 0 );'
+          $newContent | Set-Content -Path 'main.c'
+          msbuild FreeRTOS_Plus_TCP_Minimal.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
+
+      - name: Run and monitor FreeRTOS+TCP Minimal Demo
+        if: success() || failure() && steps.build-plus-tcp-minimal-demo.outcome == 'success'
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
+        with:
+          exe-path: FreeRTOS-Plus/Demo/FreeRTOS_Plus_TCP_Minimal_Windows_Simulator/x64/Debug/FreeRTOS_Plus_TCP_Minimal.exe
+          log-dir: demo_run_logs
+          timeout-seconds: 300
+          success-line: "Received correct data"
 
       - name: Build FreeRTOS+TCP UDP CLI Demo
         working-directory: FreeRTOS-Plus/Demo/FreeRTOS_Plus_TCP_UDP_Mode_CLI_Windows_Simulator
