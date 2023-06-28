@@ -77,7 +77,7 @@ extern void vLoggingPrintf( const char * pcFormatString,
  *
  * #define democonfigSERVER_HOSTNAME    "...insert here..."
  */
-#define democonfigSERVER_HOSTNAME    "127.0.0.1"
+#define democonfigSERVER_HOSTNAME    "localhost"
 /**
  * @brief HTTP server port number.
  *

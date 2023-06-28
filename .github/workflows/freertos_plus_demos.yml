@@ -89,6 +89,15 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
 
+      - name: Install meson
+        run: pip install meson
+
+      - name: Install Glib
+        run: |
+          cd FreeRTOS-Plus/ThirdParty/glib
+          meson setup build --backend=vs2019
+          meson compile -C build
+
       - name: Generate SSL credentials
         id: generate-credentials
         uses: FreeRTOS/CI-CD-GitHub-Actions/ssl-credential-creator@main
@@ -100,17 +109,6 @@ jobs:
           root-ca-cert-path: ${{ steps.generate-credentials.outputs.root-ca-cert-path }}
           server-priv-key-path: ${{ steps.generate-credentials.outputs.server-priv-key-path }}
           server-cert-path: ${{ steps.generate-credentials.outputs.server-cert-path }}
-
-      - name: Install meson
-        run: |
-          pip install meson
-
-      - name: Install Glib
-        run: |
-          cd FreeRTOS-Plus/ThirdParty/glib
-          meson setup build --backend=vs
-          cd build
-          meson compile
 
       - name: Update main.c to force stdout to write immediately
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/Common
@@ -246,6 +244,15 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
 
+      - name: Install meson
+        run: pip install meson
+
+      - name: Install Glib
+        run: |
+          cd FreeRTOS-Plus/ThirdParty/glib
+          meson setup build --backend=vs2019
+          meson compile -C build
+
       - name: Generate SSL credentials
         id: generate-credentials
         uses: FreeRTOS/CI-CD-GitHub-Actions/ssl-credential-creator@main
@@ -257,17 +264,6 @@ jobs:
           root-ca-cert-path: ${{ steps.generate-credentials.outputs.root-ca-cert-path }}
           server-priv-key-path: ${{ steps.generate-credentials.outputs.server-priv-key-path }}
           server-cert-path: ${{ steps.generate-credentials.outputs.server-cert-path }}
-
-      - name: Install meson
-        run: |
-          pip install meson
-
-      - name: Install Glib
-        run: |
-          cd FreeRTOS-Plus/ThirdParty/glib
-          meson setup build --backend=vs
-          cd build
-          meson compile
 
       - name: Update main.c to force stdout to write immediately
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/Common
@@ -539,9 +535,8 @@ jobs:
       - name: Install Glib
         run: |
           cd FreeRTOS-Plus/ThirdParty/glib
-          meson setup build --backend=vs
-          cd build
-          meson compile
+          meson setup build --backend=vs2019
+          meson compile -C build
 
       - name: Build FreeRTOS+TCP Minimal Demo
         id: build-plus-tcp-minimal-demo
