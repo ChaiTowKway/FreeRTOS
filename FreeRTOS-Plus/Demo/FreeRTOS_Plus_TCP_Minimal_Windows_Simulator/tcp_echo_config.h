@@ -29,7 +29,7 @@
 #ifndef TCP_ECHO_CONFIG_H_
 #define TCP_ECHO_CONFIG_H_
 
-#define configECHO_SERVER_ADDR    "45.79.112.203"
-#define configECHO_SERVER_PORT    ( 4242U )
+#define configECHO_SERVER_ADDR    "127.0.0.1"
+#define configECHO_SERVER_PORT    ( 9000U )
 
 #endif /* TCP_ECHO_CONFIG_H_ */
