@@ -117,9 +117,22 @@ jobs:
           $newContent = $content -replace 'int\s+main(.*?)void(.*?)\r?\n\s*{', 'int main( void ){setvbuf( stdout, NULL, _IONBF, 0 );'
           $newContent | Set-Content -Path 'main.c'
 
+      - name: Configure HTTP Plain Text Demo
+        shell: bash
+        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_Plaintext
+        run: |
+          echo '#ifndef DEMO_CONFIG_H_TEST_BUILD' | tee -a demo_config.h
+          echo '    #define DEMO_CONFIG_H_TEST_BUILD' | tee -a demo_config.h
+          echo '    #define democonfigSERVER_HOSTNAME "localhost"' | tee -a demo_config.h
+          echo '#endif /* DEMO_CONFIG_H_TEST_BUILD */' | tee -a demo_config.h
+
       - name: Build HTTP Plain Text Demo
         working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_Plaintext
-        run: msbuild http_plain_text_demo.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
+        run: |
+          $content = Get-Content -Path 'demo_config.h' -Raw
+          $newContent = $content -replace '#define\s+democonfigHTTP_PORT.*', '#define democonfigHTTP_PORT	( 8080 )'
+          $newContent | Set-Content -Path 'demo_config.h'
+          msbuild http_plain_text_demo.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
 
       - name: Run and monitor HTTP Plain Text Demo
         if: success() || failure() && steps.build-mqtt-plain-text-demo.outcome == 'success'
@@ -156,10 +169,6 @@ jobs:
       - name: Build HTTP Mutual Auth Demo
         working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_Mutual_Auth
         run: msbuild http_mutual_auth_demo.sln -t:rebuild
-
-      - name: Build HTTP Plain Text Demo
-        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_Plaintext
-        run: msbuild http_plain_text_demo.sln -t:rebuild
 
       - name: Build HTTP S3 Download Demo
         working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Download
@@ -272,6 +281,17 @@ jobs:
           $newContent = $content -replace 'int\s+main(.*?)void(.*?)\r?\n\s*{', 'int main( void ){setvbuf( stdout, NULL, _IONBF, 0 );'
           $newContent | Set-Content -Path 'main.c'
 
+      - name: Configure MQTT Plain Text Demo
+        shell: bash
+        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Plain_Text
+        run: |
+          echo '#ifndef DEMO_CONFIG_H_TEST_BUILD' | tee -a demo_config.h
+          echo '    #define DEMO_CONFIG_H_TEST_BUILD' | tee -a demo_config.h
+          echo '    #define democonfigCLIENT_IDENTIFIER "mqtt_demo_test"' | tee -a demo_config.h
+          echo '    #define democonfigMQTT_BROKER_ENDPOINT "127.0.0.1"' | tee -a demo_config.h
+          echo '    #define democonfigMQTT_BROKER_PORT ( 1883 )' | tee -a demo_config.h
+          echo '#endif /* DEMO_CONFIG_H_TEST_BUILD */' | tee -a demo_config.h
+
       - name: Build MQTT Plain Text Demo
         id: build-mqtt-plain-text-demo
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Plain_Text
@@ -287,6 +307,24 @@ jobs:
           timeout-seconds: 300
           success-line: "Demo completed successfully"
 
+      - name: Configure MQTT Basic TLS Demo
+        shell: bash
+        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Basic_TLS
+        run: |
+          $ROOT_CA_PEM = $(cat ${{ steps.generate-credentials.outputs.root-ca-cert-path }})
+          $DEFINE_ROOT_CA_PEM = '    #define democonfigROOT_CA_PEM "' +  $ROOT_CA_PEM + '"'
+          echo '#ifndef DEMO_CONFIG_H_TEST_BUILD' | tee -a demo_config.h
+          echo '    #define DEMO_CONFIG_H_TEST_BUILD' | tee -a demo_config.h
+          echo '    #define democonfigCLIENT_IDENTIFIER "mqtt_demo_test"' | tee -a demo_config.h
+          echo '    #define democonfigMQTT_BROKER_ENDPOINT "127.0.0.1"' | tee -a demo_config.h
+          echo '    #define democonfigMQTT_BROKER_PORT ( 8883 )' | tee -a demo_config.h
+          echo $DEFINE_ROOT_CA_PEM | tee -a demo_config.h
+          echo '#endif /* DEMO_CONFIG_H_TEST_BUILD */' | tee -a demo_config.h
+
+      - name: Build MQTT Basic TLS Demo
+        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Basic_TLS
+        run: msbuild mqtt_plain_text_demo.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
+
       - name: Configure coreMQTT Demos
         shell: bash
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator
@@ -296,16 +334,11 @@ jobs:
           echo '    #define democonfigCLIENT_CERTIFICATE_PEM ""' | tee -a */demo_config.h
           echo '    #define democonfigCLIENT_IDENTIFIER ""' | tee -a */demo_config.h
           echo '    #define democonfigCLIENT_PRIVATE_KEY_PEM ""' | tee -a */demo_config.h
-          echo '    #define democonfigCLIENT_PRIVATE_KEY_PEM ""' | tee -a */demo_config.h
           echo '    #define democonfigMQTT_BROKER_ENDPOINT ""' | tee -a */demo_config.h
           echo '    #define democonfigMQTT_BROKER_PORT ( 8883 )' | tee -a */demo_config.h
           echo '    #define democonfigROOT_CA_PEM ""' | tee -a */demo_config.h
           echo '    #define democonfigUSE_AWS_IOT_CORE_BROKER ( 1U )' | tee -a */demo_config.h
           echo '#endif /* DEMO_CONFIG_H_TEST_BUILD */' | tee -a */demo_config.h
-
-      - name: Build MQTT Basic TLS Demo
-        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Basic_TLS
-        run: msbuild mqtt_basic_tls_demo.sln -t:rebuild -property:Configuration=Debug -m
 
       - name: Build MQTT Keep Alive Demo
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Keep_Alive
@@ -527,10 +560,9 @@ jobs:
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
-          
+
       - name: Install meson
-        run: |
-          pip install meson
+        run: pip install meson
 
       - name: Install Glib
         run: |

@@ -78,7 +78,6 @@ extern void vLoggingPrintf( const char * pcFormatString,
  *
  * #define democonfigCLIENT_IDENTIFIER				"insert here."
  */
-#define democonfigCLIENT_IDENTIFIER				"mqtt_demo_test"
 
 /**
  * @brief MQTT broker end point to connect to.
@@ -88,14 +87,12 @@ extern void vLoggingPrintf( const char * pcFormatString,
  *
  * #define democonfigMQTT_BROKER_ENDPOINT				"insert here."
  */
-#define democonfigMQTT_BROKER_ENDPOINT				"127.0.0.1"
 
 /**
  * @brief The port to use for the demo.
  *
  * #define democonfigMQTT_BROKER_PORT					( insert here. )
  */
-#define democonfigMQTT_BROKER_PORT					( 1883 )
 
 /**
  * @brief Set the stack size of the main demo task.
