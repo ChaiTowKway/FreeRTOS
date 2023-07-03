@@ -61,7 +61,7 @@
 
 /* The echo server is assumed to be on port 7, which is the standard echo
  * protocol port. */
-    #define echoECHO_PORT                 ( 7 )
+    #define echoECHO_PORT                 ( 5000 )
 
 /* The size of the buffers is a multiple of the MSS - the length of the data
  * sent is a pseudo random size between 20 and echoBUFFER_SIZES. */
@@ -101,12 +101,9 @@
     static char cTxBuffers[ echoNUM_ECHO_CLIENTS ][ echoBUFFER_SIZES ],
                 cRxBuffers[ echoNUM_ECHO_CLIENTS ][ echoBUFFER_SIZES ];
 
-    static StaticTask_t echoServerTaskBuffer;
-    static StackType_t echoServerTaskStack[ PTHREAD_STACK_MIN * 2 ];
-
 /*-----------------------------------------------------------*/
 
-    void vStartTCPEchoClientTasks_SingleTasks( size_t uxTaskStackSize,
+    void vStartTCPEchoClientTasks_SingleTasks( configSTACK_DEPTH_TYPE uxTaskStackSize,
                                                UBaseType_t uxTaskPriority )
     {
         BaseType_t x;
@@ -114,12 +111,12 @@
         /* Create the echo client tasks. */
         for( x = 0; x < echoNUM_ECHO_CLIENTS; x++ )
         {
-            xTaskCreate( 
+            xTaskCreate(
                 prvEchoClientTask,   /* The function that implements the task. */
                 "Echo0",             /* Just a text name for the task to aid debugging. */
                 uxTaskStackSize,     /* The stack size is defined in FreeRTOSIPConfig.h. */
                 ( void * ) x,        /* The task parameter, not used in this case. */
-                    uxTaskPriority,
+                uxTaskPriority,
                 NULL );              /* The priority assigned to the task is defined in FreeRTOSConfig.h. */
         }
     }
@@ -195,6 +192,9 @@
 
                     /* Add in some unique text at the front of the string. */
                     sprintf( pcTransmittedString, "TxRx message number %u", ulTxCount );
+
+                    /* Replace '\0' with '-' for string length and comparison functions */
+                    pcTransmittedString[ strlen( pcTransmittedString ) ] = '-';
                     ulTxCount++;
 
                     printf( "sending data to the echo server \n" );
@@ -316,7 +316,7 @@
                                        uint32_t ulBufferLength )
     {
         BaseType_t lCharactersToAdd, lCharacter;
-        char cChar = '0';
+        char cChar = 'A';
         const BaseType_t lMinimumLength = 60;
         uint32_t ulRandomNumber;
 
@@ -334,12 +334,14 @@
             cBuffer[ lCharacter ] = cChar;
             cChar++;
 
-            if( cChar > '~' )
+            if( cChar > 'Z' )
             {
-                cChar = '0';
+                cChar = 'A';
             }
         }
 
+        cBuffer[ lCharacter - 1 ] = '\n';
+        cBuffer[ lCharacter ] = '\0';
         return lCharactersToAdd;
     }
 /*-----------------------------------------------------------*/
