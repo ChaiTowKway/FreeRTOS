@@ -321,28 +321,14 @@ jobs:
         shell: bash
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Basic_TLS
         run: |
-          echo '#ifndef DEMO_CONFIG_H_TEST_BUILD' | tee -a demo_config.h
-          echo '    #define DEMO_CONFIG_H_TEST_BUILD' | tee -a demo_config.h
-          echo '    #define democonfigCLIENT_IDENTIFIER "mqtt_demo_test"' | tee -a demo_config.h
-          echo '    #define democonfigMQTT_BROKER_ENDPOINT "127.0.0.1"' | tee -a demo_config.h
-          echo '    #define democonfigMQTT_BROKER_PORT ( 8883 )' | tee -a demo_config.h
-          echo '    #define democonfigROOT_CA_PEM "'$(cat ${{ steps.generate-credentials.outputs.root-ca-cert-path }})'"' | tee -a demo_config.h
-          echo '#endif /* DEMO_CONFIG_H_TEST_BUILD */' | tee -a demo_config.h
-
-      - name: Build MQTT Basic TLS Demo
-        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Basic_TLS
-        run: msbuild mqtt_basic_tls_demo.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
-
-      - name: Configure MQTT Basic TLS Demo
-        shell: bash
-        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Basic_TLS
-        run: |
-          echo '#define democonfigROOT_CA_PEM \' | tee -a demo_config.h
-          sed 's/.*/"&\\n"\\/' ${{ steps.generate-credentials.outputs.root-ca-cert-path }} | tee -a demo_config.h
+          echo '#define democonfigROOT_CA_PEM \' >> demo_config.h
+          sed 's/.*/"&\\n"\\/' ${{ steps.generate-credentials.outputs.root-ca-cert-path }} >> demo_config.h
           truncate -s -1 demo_config.h
-          echo '\n#define democonfigCLIENT_IDENTIFIER "mqtt_demo_test"' | tee -a demo_config.h
-          echo '#define democonfigMQTT_BROKER_ENDPOINT "127.0.0.1"' | tee -a demo_config.h
-          echo '#define democonfigMQTT_BROKER_PORT ( 8883 )' | tee -a demo_config.h
+          echo  >> demo_config.h
+          echo '#define democonfigCLIENT_IDENTIFIER "mqtt_demo_test"' >>  demo_config.h
+          echo '#define democonfigMQTT_BROKER_ENDPOINT "127.0.0.1"' >> demo_config.h
+          echo '#define democonfigMQTT_BROKER_PORT ( 8883 )' >> demo_config.h
+          cat demo_config.h
 
       - name: Build MQTT Basic TLS Demo
         id: build-mqtt-basic-tls-demo
@@ -532,8 +518,12 @@ jobs:
           sudo apt update
           sudo apt-get install -y git build-essential libslirp-dev ncat
 
-      - name: Set Up Echo Server
-        run: ncat -vvklp 5000 -e /bin/cat &
+      # - name: Set Up Echo Server
+      #   run: ncat -vvklp 5000 -e /bin/cat &
+
+      - name: Start localhost Echo server
+        id: echo-server
+        uses: ChaiTowKway/CI-CD-GitHub-Actions/localhost-echo-server@main
 
       - name: Build FreeRTOS+TCP Echo Posix Demo
         id: build-echo-posix-demo
@@ -603,15 +593,19 @@ jobs:
           meson setup build --backend=vs2019
           meson compile -C build
 
+      - name: Start localhost Echo server
+        id: echo-server
+        uses: ChaiTowKway/CI-CD-GitHub-Actions/localhost-echo-server@main
+
       - name: Build FreeRTOS+TCP Minimal Demo
         id: build-plus-tcp-minimal-demo
         working-directory: FreeRTOS-Plus/Demo/FreeRTOS_Plus_TCP_Minimal_Windows_Simulator
         run: |
           $content = Get-Content -Path 'DemoTasks\TCPEchoClient_SingleTasks.c' -Raw
-          $newContent = $content -replace '#define\s+echoECHO_PORT.*', '#define echoECHO_PORT	( 4242 )'
+          $newContent = $content -replace '#define\s+echoECHO_PORT.*', '#define echoECHO_PORT	( 5000 )'
           $newContent | Set-Content -Path 'DemoTasks\TCPEchoClient_SingleTasks.c'
           $content = Get-Content -Path 'tcp_echo_config.h' -Raw
-          $newContent = $content -replace '#define\s+configECHO_SERVER_ADDR.*', '#define configECHO_SERVER_ADDR    "45.79.112.203"'
+          $newContent = $content -replace '#define\s+configECHO_SERVER_ADDR.*', '#define configECHO_SERVER_ADDR    "127.0.0.1"'
           $newContent | Set-Content -Path 'tcp_echo_config.h'
           $content = Get-Content -Path 'main.c' -Raw
           $newContent = $content -replace 'int\s+main(.*?)void(.*?)\r?\n\s*{', 'int main( void ){setvbuf( stdout, NULL, _IONBF, 0 );'
