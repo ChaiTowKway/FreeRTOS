@@ -518,12 +518,11 @@ jobs:
           sudo apt update
           sudo apt-get install -y git build-essential libslirp-dev ncat
 
-      # - name: Set Up Echo Server
-      #   run: ncat -vvklp 5000 -e /bin/cat &
-
       - name: Start localhost Echo server
         id: echo-server
         uses: ChaiTowKway/CI-CD-GitHub-Actions/localhost-echo-server@main
+        with:
+          port_number: 5000
 
       - name: Build FreeRTOS+TCP Echo Posix Demo
         id: build-echo-posix-demo
@@ -596,6 +595,8 @@ jobs:
       - name: Start localhost Echo server
         id: echo-server
         uses: ChaiTowKway/CI-CD-GitHub-Actions/localhost-echo-server@main
+        with:
+          port_number: 5000
 
       - name: Build FreeRTOS+TCP Minimal Demo
         id: build-plus-tcp-minimal-demo
