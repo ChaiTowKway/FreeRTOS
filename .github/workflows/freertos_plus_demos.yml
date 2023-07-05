@@ -390,6 +390,31 @@ jobs:
           timeout-seconds: 300
           success-line: "Demo completed successfully"
 
+      - name: Configure MQTT Keep Alive Demo
+        shell: bash
+        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Keep_Alive
+        run: |
+          echo '#ifndef DEMO_CONFIG_H_TEST_BUILD' >> demo_config.h
+          echo '    #define DEMO_CONFIG_H_TEST_BUILD' >> demo_config.h
+          echo '    #define democonfigCLIENT_IDENTIFIER "mqtt_demo_test"' >> demo_config.h
+          echo '    #define democonfigMQTT_BROKER_ENDPOINT "127.0.0.1"' >> demo_config.h
+          echo '    #define democonfigMQTT_BROKER_PORT ( 1883 )' >> demo_config.h
+          echo '#endif /* DEMO_CONFIG_H_TEST_BUILD */' >> demo_config.h
+
+      - name: Build MQTT Keep Alive Demo
+        id: build-mqtt-keep-alive-demo
+        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Keep_Alive
+        run: msbuild mqtt_keep_alive_demo.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
+
+      - name: Run and monitor MQTT Keep Alive Demo
+        if: success() || failure() && steps.build-mqtt-keep-alive-demo.outcome == 'success'
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
+        with:
+          exe-path: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Keep_Alive/x64/Debug/MQTT_Keep_Alive.exe
+          log-dir: demo_run_logs
+          timeout-seconds: 300
+          success-line: "Demo completed successfully"
+
       - name: Configure coreMQTT Demos
         shell: bash
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator
@@ -404,10 +429,6 @@ jobs:
           echo '    #define democonfigROOT_CA_PEM ""' | tee -a */demo_config.h
           echo '    #define democonfigUSE_AWS_IOT_CORE_BROKER ( 1U )' | tee -a */demo_config.h
           echo '#endif /* DEMO_CONFIG_H_TEST_BUILD */' | tee -a */demo_config.h
-
-      - name: Build MQTT Keep Alive Demo
-        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Keep_Alive
-        run: msbuild mqtt_keep_alive_demo.sln -t:rebuild -property:Configuration=Debug -m
 
       - name: Build MQTT Multi-Task Demo
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Multitask
