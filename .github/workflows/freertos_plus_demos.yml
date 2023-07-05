@@ -312,8 +312,8 @@ jobs:
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Basic_TLS
         run: |
           echo '#define democonfigROOT_CA_PEM \' >> demo_config.h
-          sed 's/.*/"&\\n"\\/' ${{ steps.generate-credentials.outputs.root-ca-cert-path }} >> output.txt
-          sed '$ s/.$//' output.txt >> demo_config.h
+          sed 's/.*/"&\\n"\\/' ${{ steps.generate-credentials.outputs.root-ca-cert-path }} >> demo_config.h
+          sed -i -z 's/.$//' demo_config.h
           echo '#define democonfigCLIENT_IDENTIFIER "mqtt_demo_test"' >>  demo_config.h
           echo '#define democonfigMQTT_BROKER_ENDPOINT "127.0.0.1"' >> demo_config.h
           echo '#define democonfigMQTT_BROKER_PORT ( 8883 )' >> demo_config.h
@@ -329,6 +329,38 @@ jobs:
         uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
         with:
           exe-path: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Basic_TLS/x64/Debug/MQTT_Basic_TLS.exe
+          log-dir: demo_run_logs
+          timeout-seconds: 300
+          success-line: "Demo completed successfully"
+
+      - name: Configure MQTT Mutual Authentication with mbedtls Demo
+        shell: bash
+        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Mutual_Auth
+        run: |
+          echo '#define democonfigROOT_CA_PEM \' >> demo_config.h
+          sed 's/.*/"&\\n"\\/' ${{ steps.generate-credentials.outputs.root-ca-cert-path }} >> demo_config.h
+          sed -i -z 's/.$//' demo_config.h
+          echo '#define democonfigCLIENT_CERTIFICATE_PEM \' >> demo_config.h
+          sed 's/.*/"&\\n"\\/' ${{ steps.generate-credentials.outputs.device-cert-path }} >> demo_config.h
+          sed -i -z 's/.$//' demo_config.h
+          echo '#define democonfigCLIENT_PRIVATE_KEY_PEM \' >> demo_config.h
+          sed 's/.*/"&\\n"\\/' ${{ steps.generate-credentials.outputs.device-priv-key-path }} >> demo_config.h
+          sed -i -z 's/.$//' demo_config.h
+          echo '#define democonfigCLIENT_IDENTIFIER "mqtt_demo_test"' >>  demo_config.h
+          echo '#define democonfigMQTT_BROKER_ENDPOINT "127.0.0.1"' >> demo_config.h
+          echo '#define democonfigMQTT_BROKER_PORT ( 8883 )' >> demo_config.h
+          sed -i -z "s/define[[:space:]]*democonfigDISABLE_SNI[[:space:]]*([[:space:]]*[a-zA-Z0-9]\+[[:space:]]*)/define democonfigDISABLE_SNI ( pdTRUE )/g" demo_config.h
+
+      - name: Build MQTT Mutual Authentication with mbedtls Demo
+        id: build-mqtt-mutual-auth-demo
+        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Mutual_Auth
+        run: msbuild mqtt_mutual_auth_demo.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
+
+      - name: Run and monitor MQTT Mutual Authentication with mbedtls Demo
+        if: success() || failure() && steps.build-mqtt-mutual-auth-demo.outcome == 'success'
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
+        with:
+          exe-path: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Mutual_Auth/x64/Debug/MQTT_Mutual_Auth.exe
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Demo completed successfully"
@@ -355,10 +387,6 @@ jobs:
       - name: Build MQTT Multi-Task Demo
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Multitask
         run: msbuild mqtt_multitask_demo.sln -t:rebuild -property:Configuration=Debug -m
-
-      - name: Build MQTT Mutual Authentication with mbedtls Demo
-        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Mutual_Auth
-        run: msbuild mqtt_mutual_auth_demo.sln -t:rebuild -property:Configuration=Debug -m
 
       - name: Build MQTT Mutual Authentication with WolfSSL Demo
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Mutual_Auth_wolfSSL
