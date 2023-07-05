@@ -162,14 +162,10 @@
     <ProjectReference Include="..\FreeRTOS+TCP\FreeRTOS+TCP.vcxproj">
       <Project>{c90e6cc5-818b-4c97-8876-0986d989387c}</Project>
       <Private>false</Private>
-      <LinkLibraryDependencies>false</LinkLibraryDependencies>
-      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\FreeRTOS-Kernel\FreeRTOS-Kernel.vcxproj">
       <Project>{72c209c4-49a4-4942-a201-44706c9d77ec}</Project>
       <Private>false</Private>
-      <LinkLibraryDependencies>false</LinkLibraryDependencies>
-      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

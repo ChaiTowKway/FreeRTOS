@@ -240,8 +240,8 @@
   <ItemGroup>
     <ProjectReference Include="..\FreeRTOS-Kernel\FreeRTOS-Kernel.vcxproj">
       <Project>{72c209c4-49a4-4942-a201-44706c9d77ec}</Project>
-      <LinkLibraryDependencies>true</LinkLibraryDependencies>
       <Private>false</Private>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">

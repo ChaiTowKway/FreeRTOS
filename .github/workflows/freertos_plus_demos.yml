@@ -253,16 +253,6 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
 
-      - name: Generate SSL credentials
-        id: generate-credentials
-        uses: FreeRTOS/CI-CD-GitHub-Actions/ssl-credential-creator@main
-
-      # - name: TEST ROOT CA
-      #   shell: bash
-      #   run: |
-      #     echo ' #define democonfigROOT_CA_PEM \'
-      #     sed 's/.*/"&\\n" \\/' ${{ steps.generate-credentials.outputs.root-ca-cert-path }}
-
       - name: Install meson
         run: pip install meson
 
@@ -272,9 +262,9 @@ jobs:
           meson setup build --backend=vs2019
           meson compile -C build
 
-      # - name: Generate SSL credentials
-      #   id: generate-credentials
-      #   uses: FreeRTOS/CI-CD-GitHub-Actions/ssl-credential-creator@main
+      - name: Generate SSL credentials
+        id: generate-credentials
+        uses: FreeRTOS/CI-CD-GitHub-Actions/ssl-credential-creator@main
 
       - name: Start localhost MQTT broker
         id: mqtt-broker
@@ -324,11 +314,10 @@ jobs:
           echo '#define democonfigROOT_CA_PEM \' >> demo_config.h
           sed 's/.*/"&\\n"\\/' ${{ steps.generate-credentials.outputs.root-ca-cert-path }} >> output.txt
           sed '$ s/.$//' output.txt >> demo_config.h
-          echo  >> demo_config.h
           echo '#define democonfigCLIENT_IDENTIFIER "mqtt_demo_test"' >>  demo_config.h
           echo '#define democonfigMQTT_BROKER_ENDPOINT "127.0.0.1"' >> demo_config.h
           echo '#define democonfigMQTT_BROKER_PORT ( 8883 )' >> demo_config.h
-          cat demo_config.h
+          sed -i -z "s/define[[:space:]]*democonfigDISABLE_SNI[[:space:]]*([[:space:]]*[a-zA-Z0-9]\+[[:space:]]*)/define democonfigDISABLE_SNI ( pdTRUE )/g" demo_config.h
 
       - name: Build MQTT Basic TLS Demo
         id: build-mqtt-basic-tls-demo
