@@ -52,10 +52,10 @@
     <Filter Include="Network Interface Backends\winpcap\library\include\pcap">
       <UniqueIdentifier>{2968f486-aba8-47f5-a175-fe77e197a2c6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Network Interface Backends\libslirp\library\dependency\glib\x86\tcp_utilities">
+    <Filter Include="Network Interface Backends\libslirp\library\dependency\glib\x64\tcp_utilities">
       <UniqueIdentifier>{b2e06bcd-b665-4ef4-8eff-5203748463d1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Network Interface Backends\libslirp\library\dependency\glib\x86\tcp_utilities\include">
+    <Filter Include="Network Interface Backends\libslirp\library\dependency\glib\x64\tcp_utilities\include">
       <UniqueIdentifier>{af7dc417-59c0-4c2b-bb4b-cc9b84817e89}</UniqueIdentifier>
     </Filter>
     <Filter Include="Network Interface Backends\libslirp\library\dependency\glib\include">
@@ -127,13 +127,13 @@
       <Filter>source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\FreeRTOS-Plus-TCP\tools\tcp_utilities\tcp_dump_packets.c">
-      <Filter>Network Interface Backends\libslirp\library\dependency\glib\x86\tcp_utilities</Filter>
+      <Filter>Network Interface Backends\libslirp\library\dependency\glib\x64\tcp_utilities</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\FreeRTOS-Plus-TCP\tools\tcp_utilities\tcp_mem_stats.c">
-      <Filter>Network Interface Backends\libslirp\library\dependency\glib\x86\tcp_utilities</Filter>
+      <Filter>Network Interface Backends\libslirp\library\dependency\glib\x64\tcp_utilities</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\FreeRTOS-Plus-TCP\tools\tcp_utilities\tcp_netstat.c">
-      <Filter>Network Interface Backends\libslirp\library\dependency\glib\x86\tcp_utilities</Filter>
+      <Filter>Network Interface Backends\libslirp\library\dependency\glib\x64\tcp_utilities</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Source\FreeRTOS-Plus-TCP\source\portable\BufferManagement\BufferAllocation_2.c">
       <Filter>source</Filter>
@@ -325,13 +325,13 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\FreeRTOS-Plus-TCP\tools\tcp_utilities\include\tcp_dump_packets.h">
-      <Filter>Network Interface Backends\libslirp\library\dependency\glib\x86\tcp_utilities\include</Filter>
+      <Filter>Network Interface Backends\libslirp\library\dependency\glib\x64\tcp_utilities\include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\FreeRTOS-Plus-TCP\tools\tcp_utilities\include\tcp_netstat.h">
-      <Filter>Network Interface Backends\libslirp\library\dependency\glib\x86\tcp_utilities\include</Filter>
+      <Filter>Network Interface Backends\libslirp\library\dependency\glib\x64\tcp_utilities\include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\FreeRTOS-Plus-TCP\tools\tcp_utilities\include\tcp_mem_stats.h">
-      <Filter>Network Interface Backends\libslirp\library\dependency\glib\x86\tcp_utilities\include</Filter>
+      <Filter>Network Interface Backends\libslirp\library\dependency\glib\x64\tcp_utilities\include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\FreeRTOS-Plus-TCP\source\portable\Compiler\MSVC\pack_struct_end.h">
       <Filter>compiler_msvc</Filter>
@@ -841,13 +841,13 @@
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\..\ThirdParty\glib\build\subprojects\pcre2-10.42\pcre2-8.lib">
-      <Filter>Network Interface Backends\libslirp\library\dependency\glib\x86</Filter>
+      <Filter>Network Interface Backends\libslirp\library\dependency\glib\x64</Filter>
     </Library>
     <Library Include="..\..\ThirdParty\glib\build\subprojects\proxy-libintl\intl.lib">
-      <Filter>Network Interface Backends\libslirp\library\dependency\glib\x86</Filter>
+      <Filter>Network Interface Backends\libslirp\library\dependency\glib\x64</Filter>
     </Library>
     <Library Include="..\..\ThirdParty\glib\build\glib\glib-2.0.lib">
-      <Filter>Network Interface Backends\libslirp\library\dependency\glib\x86</Filter>
+      <Filter>Network Interface Backends\libslirp\library\dependency\glib\x64</Filter>
     </Library>
   </ItemGroup>
   <ItemGroup>
