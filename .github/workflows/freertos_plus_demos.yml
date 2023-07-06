@@ -308,15 +308,11 @@ jobs:
         shell: bash
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Plain_Text
         run: |
-          echo '#ifndef DEMO_CONFIG_H_TEST_BUILD' >> demo_config.h
-          echo '    #define DEMO_CONFIG_H_TEST_BUILD' >> demo_config.h
-          echo '    #define democonfigCLIENT_IDENTIFIER "mqtt_demo_test"' >> demo_config.h
-          echo '    #define democonfigMQTT_BROKER_ENDPOINT "127.0.0.1"' >> demo_config.h
-          echo '    #define democonfigMQTT_BROKER_PORT ( 1883 )' >> demo_config.h
-          echo '#endif /* DEMO_CONFIG_H_TEST_BUILD */' >> demo_config.h
+          echo '#define democonfigCLIENT_IDENTIFIER "mqtt_demo_test"' >> demo_config.h
+          echo '#define democonfigMQTT_BROKER_ENDPOINT "127.0.0.1"' >> demo_config.h
+          echo '#define democonfigMQTT_BROKER_PORT ( 1883 )' >> demo_config.h
 
       - name: Build MQTT Plain Text Demo
-        if: success() || failure()
         id: build-mqtt-plain-text-demo
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Plain_Text
         run: |
@@ -414,6 +410,28 @@ jobs:
           timeout-seconds: 300
           success-line: "Demo completed successfully"
 
+      - name: Configure MQTT Serializer Demo
+        shell: bash
+        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Serializer
+        run: |
+          echo '#define democonfigCLIENT_IDENTIFIER "mqtt_demo_test"' >> demo_config.h
+          echo '#define democonfigMQTT_BROKER_ENDPOINT "127.0.0.1"' >> demo_config.h
+          echo '#define democonfigMQTT_BROKER_PORT ( 1883 )' >> demo_config.h
+
+      - name: Build MQTT Serializer Demo
+        id: build-mqtt-serializer-demo
+        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Serializer
+        run: msbuild mqtt_serializer_demo.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
+
+      - name: Run and monitor MQTT Serializer Demo
+        if: success() || failure() && steps.build-mqtt-serializer-demo.outcome == 'success'
+        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        with:
+          exe-path: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Serializer/x64/Debug/MQTT_Serializer.exe
+          log-dir: demo_run_logs
+          timeout-seconds: 300
+          success-line: "Demo completed successfully"
+
       - name: Configure coreMQTT Demos
         shell: bash
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator
@@ -436,10 +454,6 @@ jobs:
       - name: Build MQTT Mutual Authentication with WolfSSL Demo
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Mutual_Auth_wolfSSL
         run: msbuild mqtt_mutual_auth_demo_wolfSSL.sln -t:rebuild -property:Configuration=Debug -m
-
-      - name: Build MQTT Serializer Demo
-        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Serializer
-        run: msbuild mqtt_serializer_demo.sln -t:rebuild -property:Configuration=Debug -m
 
       - name: Configure corePKCS11_MQTT_Mutual_Auth_Windows_Simulator
         shell: bash
