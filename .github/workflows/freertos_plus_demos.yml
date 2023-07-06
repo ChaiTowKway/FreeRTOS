@@ -452,6 +452,38 @@ jobs:
           timeout-seconds: 300
           success-line: "Demo completed successfully"
 
+      - name: Configure MQTT Mutual Authentication with WolfSSL Demo
+        shell: bash
+        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Mutual_Auth_wolfSSL
+        run: |
+          echo '#define democonfigCREDENTIALS_IN_BUFFER 0' >>  demo_config.h
+          echo '#define democonfigROOT_CA_PEM \' >> demo_config.h
+          sed 's/.*/"&\\n"\\/' ${{ steps.generate-credentials.outputs.root-ca-cert-path }} >> root_ca_cert.txt
+          sed '$ s/.$//' root_ca_cert.txt >> demo_config.h
+          echo '#define democonfigCLIENT_CERTIFICATE_PEM \' >> demo_config.h
+          sed 's/.*/"&\\n"\\/' ${{ steps.generate-credentials.outputs.device-cert-path }} >> device_cert.txt
+          sed '$ s/.$//' device_cert.txt >> demo_config.h
+          echo '#define democonfigCLIENT_PRIVATE_KEY_PEM \' >> demo_config.h
+          sed 's/.*/"&\\n"\\/' ${{ steps.generate-credentials.outputs.device-priv-key-path }} >> device_priv_key.txt
+          sed '$ s/.$//' device_priv_key.txt >> demo_config.h
+          echo '#define democonfigCLIENT_IDENTIFIER "mqtt_demo_test"' >>  demo_config.h
+          echo '#define democonfigMQTT_BROKER_ENDPOINT "127.0.0.1"' >> demo_config.h
+          echo '#define democonfigMQTT_BROKER_PORT ( 8883 )' >> demo_config.h
+
+      - name: Build MQTT Mutual Authentication with WolfSSL Demo
+        id: build-mqtt-mutual-auth-with-wolfssl-demo
+        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Mutual_Auth_wolfSSL
+        run: msbuild mqtt_mutual_auth_demo_wolfSSL.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
+
+      - name: Run and monitor MQTT Mutual Authentication with WolfSSL Demo
+        if: success() || failure() && steps.build-mqtt-mutual-auth-with-wolfssl-demo.outcome == 'success'
+        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        with:
+          exe-path: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Mutual_Auth_wolfSSL/x64/Debug/RTOSDemo.exe
+          log-dir: demo_run_logs
+          timeout-seconds: 300
+          success-line: "Demo completed successfully"
+
       - name: Configure coreMQTT Demos
         shell: bash
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator
@@ -470,10 +502,6 @@ jobs:
       - name: Build MQTT Multi-Task Demo
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Multitask
         run: msbuild mqtt_multitask_demo.sln -t:rebuild -property:Configuration=Debug -m
-
-      - name: Build MQTT Mutual Authentication with WolfSSL Demo
-        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Mutual_Auth_wolfSSL
-        run: msbuild mqtt_mutual_auth_demo_wolfSSL.sln -t:rebuild -property:Configuration=Debug -m
 
       - name: Configure corePKCS11_MQTT_Mutual_Auth_Windows_Simulator
         shell: bash
