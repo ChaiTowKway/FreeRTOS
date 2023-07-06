@@ -112,7 +112,7 @@ jobs:
           server-cert-path: ${{ steps.generate-credentials.outputs.server-cert-path }}
 
       - name: Update main.c to force stdout to write immediately
-        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/Common
+        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/Common
         run: |
           $content = Get-Content -Path 'main.c' -Raw
           $newContent = $content -replace 'int\s+main(.*?)void(.*?)\r?\n\s*{', 'int main( void ){setvbuf( stdout, NULL, _IONBF, 0 );'
