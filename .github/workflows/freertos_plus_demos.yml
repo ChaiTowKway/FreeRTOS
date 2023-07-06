@@ -224,16 +224,36 @@ jobs:
             FreeRTOS-Plus/Source/Utilities/backoff_algorithm \
             FreeRTOS-Plus/Source/coreJSON \
             FreeRTOS-Plus/Source/corePKCS11 \
-            FreeRTOS-Plus/ThirdParty/mbedtls
+            FreeRTOS-Plus/ThirdParty/mbedtls \
+            FreeRTOS-Plus/ThirdParty/glib
 
           git -C FreeRTOS-Plus/Source/corePKCS11 submodule update --checkout --init --depth 1 source/dependency/3rdparty/pkcs11
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
 
-      - name: corePKCS11 Demo
+      - name: Install meson
+        run: pip install meson
+
+      - name: Install Glib
+        run: |
+          cd FreeRTOS-Plus/ThirdParty/glib
+          meson setup build --backend=vs2019
+          meson compile -C build
+
+      - name: Build corePKCS11 Demo
+        id: build-corePKCS11-demo
         working-directory: FreeRTOS-Plus/Demo/corePKCS11_Windows_Simulator
-        run: msbuild CorePKCS11_Demos.sln -t:rebuild -m
+        run: msbuild CorePKCS11_Demos.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
+
+      - name: Run and monitor corePKCS11 Demo
+        if: success() || failure() && steps.build-corePKCS11-demo.outcome == 'success'
+        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        with:
+          exe-path: FreeRTOS-Plus/Demo/corePKCS11_Windows_Simulator/x64/Debug/CorePKCS11_Demos.exe
+          log-dir: demo_run_logs
+          timeout-seconds: 300
+          success-line: "Finished DEMO"
 
   winsim_corelibs:
     name: core Library Windows Simulator Demos

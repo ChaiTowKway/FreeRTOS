@@ -66,7 +66,7 @@ static void prvPKCS11DemoTask( void * pvParameters )
     #if ( configPKCS11_SIGN_AND_VERIFY_DEMO == 1 )
         vPKCS11SignVerifyDemo();
     #endif
-    configPRINTF( ( "---------Finished DEMO---------\r\n" ) );
+    printf( ( "\r\n---------Finished DEMO---------\r\n" ) );
 
     exit( 0 );
 }
