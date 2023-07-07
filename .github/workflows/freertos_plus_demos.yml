@@ -484,24 +484,37 @@ jobs:
           timeout-seconds: 300
           success-line: "Demo completed successfully"
 
-      - name: Configure coreMQTT Demos
+      - name: Configure MQTT Multi-Task Demo
         shell: bash
-        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator
+        working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Multitask
         run: |
-          echo '#ifndef DEMO_CONFIG_H_TEST_BUILD' | tee -a */demo_config.h
-          echo '    #define DEMO_CONFIG_H_TEST_BUILD' | tee -a */demo_config.h
-          echo '    #define democonfigCLIENT_CERTIFICATE_PEM ""' | tee -a */demo_config.h
-          echo '    #define democonfigCLIENT_IDENTIFIER ""' | tee -a */demo_config.h
-          echo '    #define democonfigCLIENT_PRIVATE_KEY_PEM ""' | tee -a */demo_config.h
-          echo '    #define democonfigMQTT_BROKER_ENDPOINT ""' | tee -a */demo_config.h
-          echo '    #define democonfigMQTT_BROKER_PORT ( 8883 )' | tee -a */demo_config.h
-          echo '    #define democonfigROOT_CA_PEM ""' | tee -a */demo_config.h
-          echo '    #define democonfigUSE_AWS_IOT_CORE_BROKER ( 1U )' | tee -a */demo_config.h
-          echo '#endif /* DEMO_CONFIG_H_TEST_BUILD */' | tee -a */demo_config.h
+          echo '#define democonfigROOT_CA_PEM \' >> demo_config.h
+          sed 's/.*/"&\\n"\\/' ${{ steps.generate-credentials.outputs.root-ca-cert-path }} >> root_ca_cert.txt
+          sed '$ s/.$//' root_ca_cert.txt >> demo_config.h
+          echo '#define democonfigCLIENT_CERTIFICATE_PEM \' >> demo_config.h
+          sed 's/.*/"&\\n"\\/' ${{ steps.generate-credentials.outputs.device-cert-path }} >> device_cert.txt
+          sed '$ s/.$//' device_cert.txt >> demo_config.h
+          echo '#define democonfigCLIENT_PRIVATE_KEY_PEM \' >> demo_config.h
+          sed 's/.*/"&\\n"\\/' ${{ steps.generate-credentials.outputs.device-priv-key-path }} >> device_priv_key.txt
+          sed '$ s/.$//' device_priv_key.txt >> demo_config.h
+          echo '#define democonfigCLIENT_IDENTIFIER "mqtt_demo_test"' >>  demo_config.h
+          echo '#define democonfigMQTT_BROKER_ENDPOINT "127.0.0.1"' >> demo_config.h
+          echo '#define democonfigMQTT_BROKER_PORT ( 8883 )' >> demo_config.h
+          sed -i -z "s/define[[:space:]]*democonfigDISABLE_SNI[[:space:]]*([[:space:]]*[a-zA-Z0-9]\+[[:space:]]*)/define democonfigDISABLE_SNI ( pdTRUE )/g" demo_config.h
 
       - name: Build MQTT Multi-Task Demo
+        id: build-mqtt-multitask-demo
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Multitask
-        run: msbuild mqtt_multitask_demo.sln -t:rebuild -property:Configuration=Debug -m
+        run: msbuild mqtt_multitask_demo.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
+
+      - name: Run and monitor MQTT Multi-Task Demo
+        if: success() || failure() && steps.build-mqtt-multitask-demo.outcome == 'success'
+        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        with:
+          exe-path: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Multitask/x64/Debug/MQTT_Multitask.exe
+          log-dir: demo_run_logs
+          timeout-seconds: 300
+          success-line: "Demo completed successfully"
 
       - name: Configure corePKCS11_MQTT_Mutual_Auth_Windows_Simulator
         shell: bash
@@ -536,7 +549,7 @@ jobs:
           echo '    #define democonfigSNTP_CLIENT_POLLING_INTERVAL_SECONDS 500U' | tee -a demo_config.h
           echo '#endif /* DEMO_CONFIG_H_TEST_BUILD */' | tee -a demo_config.h
 
-      - name: coreSNTP Demo
+      - name: Build coreSNTP Demo
         working-directory: FreeRTOS-Plus/Demo/coreSNTP_Windows_Simulator
         run: msbuild core_sntp_demo.sln -t:rebuild
 
