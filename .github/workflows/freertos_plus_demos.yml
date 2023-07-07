@@ -746,13 +746,39 @@ jobs:
           timeout-seconds: 300
           success-line: "Received correct data"
 
+      - name: Generate SSL credentials
+        id: generate-credentials
+        uses: FreeRTOS/CI-CD-GitHub-Actions/ssl-credential-creator@main
+
+      - name: Configure FreeRTOS+WolfSSL Demo
+        shell: bash
+        working-directory: FreeRTOS-Plus/Demo/FreeRTOS_Plus_WolfSSL_Windows_Simulator
+        run: |
+          cp ${{ steps.generate-credentials.outputs.root-ca-cert-path }} .
+          cp ${{ steps.generate-credentials.outputs.server-cert-path }} .
+          cp ${{ steps.generate-credentials.outputs.server-priv-key-path }} .
+          sed -i -z "s/ca-cert.pem/root_ca_cert.crt/g" SecureTCPServerTask.c
+          sed -i -z "s/server-cert.pem/server_cert.crt/g" SecureTCPServerTask.c
+          sed -i -z "s/server-key.pem/server_priv_key.key/g" SecureTCPServerTask.c
+          sed -i -z "s/ca-cert.pem/root_ca_cert.crt/g" SecureTCPClientTask.c
+
+      - name: Build FreeRTOS+WolfSSL Demo
+        id: build-freertos-wolfssl-demo
+        working-directory: FreeRTOS-Plus/Demo/FreeRTOS_Plus_WolfSSL_Windows_Simulator
+        run: msbuild FreeRTOS_Plus_WolfSSL.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
+
+      - name: Run and monitor FreeRTOS+WolfSSL Demo
+        if: success() || failure() && steps.build-freertos-wolfssl.outcome == 'success'
+        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        with:
+          exe-path: FreeRTOS-Plus/Demo/FreeRTOS_Plus_WolfSSL_Windows_Simulator/x64/Debug/FreeRTOS_Plus_WolfSSL_Windows_Simulator.exe
+          log-dir: demo_run_logs
+          timeout-seconds: 300
+          success-line: "Received by the secure server: Message number 9"
+
       - name: Build FreeRTOS+TCP UDP CLI Demo
         working-directory: FreeRTOS-Plus/Demo/FreeRTOS_Plus_TCP_UDP_Mode_CLI_Windows_Simulator
         run: msbuild FreeRTOS_Plus_UDP_with_CLI.sln -t:rebuild -property:Configuration=Debug -m
-
-      - name: Build FreeRTOS+WolfSSL Demo
-        working-directory: FreeRTOS-Plus/Demo/FreeRTOS_Plus_WolfSSL_Windows_Simulator
-        run: msbuild FreeRTOS_Plus_WolfSSL.sln -t:rebuild -property:Configuration=Debug -m
 
       - name: Build FreeRTOS+WolfSSL FIPS Demo
         working-directory: FreeRTOS-Plus/Demo/FreeRTOS_Plus_WolfSSL_FIPS_Ready_Windows_Simulator
