@@ -6,7 +6,14 @@ on:
 
   pull_request:
     branches: [main]
-
+env:
+  BUCKET_NAME : "freertos-demos-on-github-action"
+  OBJECT_NAME: "Test_S3_Upload.txt"
+  AWS_REGION : "us-east-1"
+# permission can be added at job level or workflow level    
+permissions:
+      id-token: write   # This is required for requesting the JWT
+      contents: read    # This is required for actions/checkout
 jobs:
   winsim_cellular:
     name: Windows Simulator Cellular Demos
@@ -86,6 +93,28 @@ jobs:
             FreeRTOS-Plus/ThirdParty/mbedtls \
             FreeRTOS-Plus/ThirdParty/glib
           git -C FreeRTOS-Plus/Source/Application-Protocols/coreHTTP submodule update --checkout --init --depth 1 source/dependency/3rdparty/llhttp
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::707737545917:role/freertos-github-actions
+          role-session-name: MySessionName
+          aws-region: ${{ env.AWS_REGION }}
+          managed-session-policies: |
+            arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+      - name: Copy text file to s3
+        run: |
+          aws s3 cp FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Upload/${{ env.OBJECT_NAME }} s3://${{ env.BUCKET_NAME }}/
+
+      - name: Presigned S3 URLs Generator
+        run: |
+          pip install boto3 argparse  
+          python3 FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/Common/presigned_url_generator/presigned_urls_gen.py --bucket ${{ env.BUCKET_NAME }} --key ${{ env.OBJECT_NAME }} --region ${{ env.AWS_REGION }} | tee presigned_urls.txt
+
+      - name: Get AWS S3 CA
+        run: |
+          curl https://www.amazontrust.com/repository/AmazonRootCA1.pem | tee root_ca.txt
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
@@ -553,7 +582,6 @@ jobs:
         working-directory: FreeRTOS-Plus/Demo/coreSNTP_Windows_Simulator
         run: msbuild core_sntp_demo.sln -t:rebuild
 
-
   winsim_aws_iot:
     name: AWS IoT Windows Simulator Demos
     runs-on: windows-2019
@@ -845,4 +873,3 @@ jobs:
       - name: Build FreeRTOS+RelianceEdge+CLI Demo
         working-directory: FreeRTOS-Plus/Demo/FreeRTOS_Plus_Reliance_Edge_and_CLI_Windows_Simulator
         run: msbuild FreeRTOS_Plus_Reliance_Edge_with_CLI.sln -t:rebuild -property:Configuration=Debug -m
-
