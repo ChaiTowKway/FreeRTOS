@@ -212,6 +212,31 @@ jobs:
           timeout-seconds: 300
           success-line: "Demo completed successfully"
 
+      - name: Configure HTTP S3 Download Multithreaded Demo
+        shell: bash
+        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Download_Multithreaded
+        run: |
+          echo '#define democonfigROOT_CA_PEM \' >> demo_config.h
+          curl https://www.amazontrust.com/repository/AmazonRootCA1.pem >> root_ca.txt
+          sed 's/.*/"&\\n"\\/' root_ca.txt >> root_ca_cert.txt
+          sed '$ s/.$//' root_ca_cert.txt >> demo_config.h
+          pip install boto3 argparse  
+          python3 ../Common/presigned_url_generator/presigned_urls_gen.py --bucket ${{ env.BUCKET_NAME }} --key ${{ env.OBJECT_NAME }} --region ${{ env.AWS_REGION }} >> demo_config.h
+
+      - name: Build HTTP S3 Download Multithreaded Demo
+        id: build-http-s3-download-multithreaded-demo
+        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Download_Multithreaded
+        run: msbuild http_s3_download_multithreaded_demo.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
+
+      - name: Run and monitor HTTP S3 Download Multithreaded Demo
+        if: success() || failure() && steps.build-http-s3-download-multithreaded-demo.outcome == 'success'
+        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        with:
+          exe-path: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Download_Multithreaded/x64/Debug/CoreHTTP_S3_Download_Multithreaded.exe
+          log-dir: demo_run_logs
+          timeout-seconds: 300
+          success-line: "Demo completed successfully"
+
       - name: Configure coreHTTP Demos
         shell: bash
         working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator
@@ -238,10 +263,6 @@ jobs:
       - name: Build HTTP S3 Download Demo
         working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Download
         run: msbuild http_s3_download_demo.sln -t:rebuild
-
-      - name: Build HTTP S3 Download Multithreaded Demo
-        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Download_Multithreaded
-        run: msbuild http_s3_download_multithreaded_demo.sln -t:rebuild
 
   winsim_corePKCS11:
     name: corePKCS11 WinSim Demos
