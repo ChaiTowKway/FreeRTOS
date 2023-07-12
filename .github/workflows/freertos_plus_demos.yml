@@ -94,31 +94,6 @@ jobs:
             FreeRTOS-Plus/ThirdParty/glib
           git -C FreeRTOS-Plus/Source/Application-Protocols/coreHTTP submodule update --checkout --init --depth 1 source/dependency/3rdparty/llhttp
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          role-to-assume: arn:aws:iam::707737545917:role/freertos-github-actions
-          role-session-name: MySessionName
-          aws-region: ${{ env.AWS_REGION }}
-          managed-session-policies: |
-            arn:aws:iam::aws:policy/AmazonS3FullAccess
-
-      - name: Copy text file to s3
-        run: |
-          aws s3 cp FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Upload/${{ env.OBJECT_NAME }} s3://${{ env.BUCKET_NAME }}/
-
-      - name: Configure HTTP S3 Upload Demo
-        shell: bash
-        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Upload
-        run: |
-          curl https://www.amazontrust.com/repository/AmazonRootCA1.pem >> root_ca.txt
-          echo '#define democonfigROOT_CA_PEM \' >> demo_config.h
-          sed 's/.*/"&\\n"\\/' root_ca.txt > root_ca.txt
-          sed '$ s/.$//' root_ca.txt >> demo_config.h
-          cat demo_config.h
-          pip install boto3 argparse  
-          python3 ../Common/presigned_url_generator/presigned_urls_gen.py --bucket ${{ env.BUCKET_NAME }} --key ${{ env.OBJECT_NAME }} --region ${{ env.AWS_REGION }} >> demo_config.h
-
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
 
@@ -149,20 +124,6 @@ jobs:
           $content = Get-Content -Path 'main.c' -Raw
           $newContent = $content -replace 'int\s+main(.*?)void(.*?)\r?\n\s*{', 'int main( void ){setvbuf( stdout, NULL, _IONBF, 0 );'
           $newContent | Set-Content -Path 'main.c'
- 
-      - name: Build HTTP S3 Upload Demo
-        id: build-http-s3-upload-demo
-        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Upload
-        run: msbuild http_s3_upload_demo.sln -t:rebuild
-
-      - name: Run and monitor HTTP S3 Upload Demo
-        if: success() || failure() && steps.build-http-s3-upload-demo.outcome == 'success'
-        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
-        with:
-          exe-path: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Upload/x64/Debug/CoreHTTP_S3_Upload.exe
-          log-dir: demo_run_logs
-          timeout-seconds: 300
-          success-line: "Demo completed successfully"
 
       - name: Configure HTTP Plain Text Demo
         shell: bash
@@ -178,7 +139,7 @@ jobs:
 
       - name: Run and monitor HTTP Plain Text Demo
         if: success() || failure() && steps.build-http-plain-text-demo.outcome == 'success'
-        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
         with:
           exe-path: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_Plaintext/x64/Debug/CoreHTTP_Plaintext.exe
           log-dir: demo_run_logs
@@ -209,9 +170,79 @@ jobs:
 
       - name: Run and monitor HTTP Mutual Auth Demo
         if: success() || failure() && steps.build-http-mutual-auth-demo.outcome == 'success'
-        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
         with:
           exe-path: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_Mutual_Auth/x64/Debug/CoreHTTP_Mutual_Auth.exe
+          log-dir: demo_run_logs
+          timeout-seconds: 300
+          success-line: "Demo completed successfully"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::707737545917:role/freertos-github-actions
+          role-session-name: MySessionName
+          aws-region: ${{ env.AWS_REGION }}
+          managed-session-policies: |
+            arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+      - name: Copy text file to S3
+        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/Common
+        run: |
+          aws s3 cp ${{ env.OBJECT_NAME }} s3://${{ env.BUCKET_NAME }}/
+
+      - name: Presigned S3 URLs Generator
+        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/Common
+        run: |
+          pip install boto3 argparse  
+          python3 ./presigned_url_generator/presigned_urls_gen.py --bucket ${{ env.BUCKET_NAME }} --key ${{ env.OBJECT_NAME }} --region ${{ env.AWS_REGION }} >> presigned_urls.txt
+
+      - name: Get AWS Root CA
+        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/Common
+        run: |
+          curl https://www.amazontrust.com/repository/AmazonRootCA1.pem >> root_ca.txt
+          sed 's/.*/"&\\n"\\/' root_ca.txt >> root_ca_cert.txt
+
+      - name: Configure HTTP S3 Upload Demo
+        shell: bash
+        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Upload
+        run: |
+          echo '#define democonfigROOT_CA_PEM \' >> demo_config.h
+          sed '$ s/.$//' ../Common/root_ca_cert.txt >> demo_config.h
+          cat ../Common/presigned_urls.txt >> demo_config.h
+
+      - name: Build HTTP S3 Upload Demo
+        id: build-http-s3-upload-demo
+        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Upload
+        run: msbuild http_s3_upload_demo.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
+
+      - name: Run and monitor HTTP S3 Upload Demo
+        if: success() || failure() && steps.build-http-s3-upload-demo.outcome == 'success'
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
+        with:
+          exe-path: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Upload/x64/Debug/CoreHTTP_S3_Upload.exe
+          log-dir: demo_run_logs
+          timeout-seconds: 300
+          success-line: "Demo completed successfully"
+
+      - name: Configure HTTP S3 Download Multithreaded Demo
+        shell: bash
+        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Download_Multithreaded
+        run: |
+          echo '#define democonfigROOT_CA_PEM \' >> demo_config.h
+          sed '$ s/.$//' ../Common/root_ca_cert.txt >> demo_config.h
+          cat ../Common/presigned_urls.txt >> demo_config.h
+
+      - name: Build HTTP S3 Download Multithreaded Demo
+        id: build-http-s3-download-multithreaded-demo
+        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Download_Multithreaded
+        run: msbuild http_s3_download_multithreaded_demo.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
+
+      - name: Run and monitor HTTP S3 Download Multithreaded Demo
+        if: success() || failure() && steps.build-http-s3-download-multithreaded-demo.outcome == 'success'
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
+        with:
+          exe-path: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Download_Multithreaded/x64/Debug/CoreHTTP_S3_Download_Multithreaded.exe
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Demo completed successfully"
@@ -242,12 +273,6 @@ jobs:
       - name: Build HTTP S3 Download Demo
         working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Download
         run: msbuild http_s3_download_demo.sln -t:rebuild
-
-      - name: Build HTTP S3 Download Multithreaded Demo
-        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Download_Multithreaded
-        run: msbuild http_s3_download_multithreaded_demo.sln -t:rebuild
-
-
 
   winsim_corePKCS11:
     name: corePKCS11 WinSim Demos
@@ -291,7 +316,7 @@ jobs:
 
       - name: Run and monitor corePKCS11 Demo
         if: success() || failure() && steps.build-corePKCS11-demo.outcome == 'success'
-        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
         with:
           exe-path: FreeRTOS-Plus/Demo/corePKCS11_Windows_Simulator/x64/Debug/CorePKCS11_Demos.exe
           log-dir: demo_run_logs
@@ -383,7 +408,7 @@ jobs:
 
       - name: Run and monitor MQTT Plain Text Demo
         if: success() || failure() && steps.build-mqtt-plain-text-demo.outcome == 'success'
-        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
         with:
           exe-path: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Plain_Text/x64/Debug/MQTT_Plain_Text.exe
           log-dir: demo_run_logs
@@ -409,7 +434,7 @@ jobs:
 
       - name: Run and monitor MQTT Basic TLS Demo
         if: success() || failure() && steps.build-mqtt-basic-tls-demo.outcome == 'success'
-        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
         with:
           exe-path: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Basic_TLS/x64/Debug/MQTT_Basic_TLS.exe
           log-dir: demo_run_logs
@@ -441,7 +466,7 @@ jobs:
 
       - name: Run and monitor MQTT Mutual Authentication with mbedtls Demo
         if: success() || failure() && steps.build-mqtt-mutual-auth-demo.outcome == 'success'
-        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
         with:
           exe-path: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Mutual_Auth/x64/Debug/MQTT_Mutual_Auth.exe
           log-dir: demo_run_logs
@@ -466,7 +491,7 @@ jobs:
 
       - name: Run and monitor MQTT Keep Alive Demo
         if: success() || failure() && steps.build-mqtt-keep-alive-demo.outcome == 'success'
-        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
         with:
           exe-path: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Keep_Alive/x64/Debug/MQTT_Keep_Alive.exe
           log-dir: demo_run_logs
@@ -488,7 +513,7 @@ jobs:
 
       - name: Run and monitor MQTT Serializer Demo
         if: success() || failure() && steps.build-mqtt-serializer-demo.outcome == 'success'
-        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
         with:
           exe-path: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Serializer/x64/Debug/MQTT_Serializer.exe
           log-dir: demo_run_logs
@@ -520,7 +545,7 @@ jobs:
 
       - name: Run and monitor MQTT Mutual Authentication with WolfSSL Demo
         if: success() || failure() && steps.build-mqtt-mutual-auth-with-wolfssl-demo.outcome == 'success'
-        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
         with:
           exe-path: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Mutual_Auth_wolfSSL/x64/Debug/RTOSDemo.exe
           log-dir: demo_run_logs
@@ -552,7 +577,7 @@ jobs:
 
       - name: Run and monitor MQTT Multi-Task Demo
         if: success() || failure() && steps.build-mqtt-multitask-demo.outcome == 'success'
-        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
         with:
           exe-path: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Multitask/x64/Debug/MQTT_Multitask.exe
           log-dir: demo_run_logs
@@ -713,7 +738,7 @@ jobs:
 
       - name: Run and monitor FreeRTOS+TCP Echo Posix Demo
         if: success() || failure() && steps.build-echo-posix-demo.outcome == 'success'
-        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
         with:
           exe-path: FreeRTOS-Plus/Demo/FreeRTOS_Plus_TCP_Echo_Posix/build/posix_tcp_demo
           log-dir: demo_run_logs
@@ -794,7 +819,7 @@ jobs:
 
       - name: Run and monitor FreeRTOS+TCP Minimal Demo
         if: success() || failure() && steps.build-plus-tcp-minimal-demo.outcome == 'success'
-        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
         with:
           exe-path: FreeRTOS-Plus/Demo/FreeRTOS_Plus_TCP_Minimal_Windows_Simulator/x64/Debug/FreeRTOS_Plus_TCP_Minimal.exe
           log-dir: demo_run_logs
@@ -824,7 +849,7 @@ jobs:
 
       - name: Run and monitor FreeRTOS+WolfSSL Demo
         if: success() || failure() && steps.build-freertos-wolfssl.outcome == 'success'
-        uses: Skptak/CI-CD-GitHub-Actions/executable-monitor@main
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
         with:
           exe-path: FreeRTOS-Plus/Demo/FreeRTOS_Plus_WolfSSL_Windows_Simulator/x64/Debug/FreeRTOS_Plus_WolfSSL_Windows_Simulator.exe
           log-dir: demo_run_logs
