@@ -177,6 +177,7 @@ jobs:
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Demo completed successfully"
+          retry-attempts: 2
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -199,6 +200,7 @@ jobs:
           python3 ./presigned_url_generator/presigned_urls_gen.py --bucket ${{ env.BUCKET_NAME }} --key ${{ env.OBJECT_NAME }} --region ${{ env.AWS_REGION }} >> presigned_urls.txt
 
       - name: Get AWS Root CA
+        shell: bash
         working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/Common
         run: |
           curl https://www.amazontrust.com/repository/AmazonRootCA1.pem >> root_ca.txt
@@ -225,6 +227,7 @@ jobs:
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Demo completed successfully"
+          retry-attempts: 2
 
       - name: Configure HTTP S3 Download Multithreaded Demo
         shell: bash
@@ -247,6 +250,7 @@ jobs:
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Demo completed successfully"
+          retry-attempts: 2
 
       - name: Configure coreHTTP Demos
         shell: bash
