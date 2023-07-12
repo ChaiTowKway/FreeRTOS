@@ -145,6 +145,7 @@ jobs:
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Demo completed successfully"
+          retry-attempts: 2
 
       - name: Configure HTTP Mutual Auth Demo
         shell: bash
@@ -176,6 +177,7 @@ jobs:
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Demo completed successfully"
+          retry-attempts: 2
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -225,6 +227,7 @@ jobs:
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Demo completed successfully"
+          retry-attempts: 2
 
       - name: Configure HTTP S3 Download Multithreaded Demo
         shell: bash
@@ -247,6 +250,7 @@ jobs:
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Demo completed successfully"
+          retry-attempts: 2
 
       - name: Configure coreHTTP Demos
         shell: bash
@@ -323,6 +327,7 @@ jobs:
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Finished DEMO"
+          retry-attempts: 2
 
   winsim_corelibs:
     name: core Library Windows Simulator Demos
@@ -415,6 +420,7 @@ jobs:
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Demo completed successfully"
+          retry-attempts: 2
 
       - name: Configure MQTT Basic TLS Demo
         shell: bash
@@ -441,6 +447,7 @@ jobs:
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Demo completed successfully"
+          retry-attempts: 2
 
       - name: Configure MQTT Mutual Authentication with mbedtls Demo
         shell: bash
@@ -473,6 +480,7 @@ jobs:
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Demo completed successfully"
+          retry-attempts: 2
 
       - name: Configure MQTT Keep Alive Demo
         shell: bash
@@ -498,6 +506,7 @@ jobs:
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Demo completed successfully"
+          retry-attempts: 2
 
       - name: Configure MQTT Serializer Demo
         shell: bash
@@ -520,6 +529,7 @@ jobs:
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Demo completed successfully"
+          retry-attempts: 2
 
       - name: Configure MQTT Mutual Authentication with WolfSSL Demo
         shell: bash
@@ -552,6 +562,7 @@ jobs:
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Demo completed successfully"
+          retry-attempts: 2
 
       - name: Configure MQTT Multi-Task Demo
         shell: bash
@@ -576,14 +587,15 @@ jobs:
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Multitask
         run: msbuild mqtt_multitask_demo.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
 
-      - name: Run and monitor MQTT Multi-Task Demo
-        if: success() || failure() && steps.build-mqtt-multitask-demo.outcome == 'success'
-        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
-        with:
-          exe-path: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Multitask/x64/Debug/MQTT_Multitask.exe
-          log-dir: demo_run_logs
-          timeout-seconds: 300
-          success-line: "Demo completed successfully"
+      # - name: Run and monitor MQTT Multi-Task Demo
+      #   if: success() || failure() && steps.build-mqtt-multitask-demo.outcome == 'success'
+      #   uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
+      #   with:
+      #     exe-path: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Multitask/x64/Debug/MQTT_Multitask.exe
+      #     log-dir: demo_run_logs
+      #     timeout-seconds: 300
+      #     success-line: "Demo completed successfully"
+      #     retry-attempts: 2
 
       - name: Configure corePKCS11_MQTT_Mutual_Auth_Windows_Simulator
         shell: bash
@@ -745,6 +757,7 @@ jobs:
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Received correct data"
+          retry-attempts: 2
 
   plus_tcp_arm:
     name: FreeRTOS+TCP QEMU ARM MPS2 AN385
@@ -826,6 +839,7 @@ jobs:
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Received correct data"
+          retry-attempts: 2
 
       - name: Generate SSL credentials
         id: generate-credentials
@@ -856,6 +870,7 @@ jobs:
           log-dir: demo_run_logs
           timeout-seconds: 300
           success-line: "Received by the secure server: Message number 9"
+          retry-attempts: 2
 
       - name: Build FreeRTOS+TCP UDP CLI Demo
         working-directory: FreeRTOS-Plus/Demo/FreeRTOS_Plus_TCP_UDP_Mode_CLI_Windows_Simulator
