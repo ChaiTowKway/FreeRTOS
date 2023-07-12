@@ -252,6 +252,19 @@ jobs:
           success-line: "Demo completed successfully"
           retry-attempts: 2
 
+      - name: Configure HTTP S3 Download Demo
+        shell: bash
+        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Download
+        run: |
+          echo '#define democonfigROOT_CA_PEM \' >> demo_config.h
+          sed '$ s/.$//' ../Common/root_ca_cert.txt >> demo_config.h
+          aws iot create-keys-and-certificate --set-as-active --certificate-pem-outfile certificate_filename.pem --public-key-outfile public_filename.key --private-key-outfile private_filename.key >> iot_cert.txt
+          certificateArn=$(cat iot_cert.txt | python3 -c "import sys, json; print(json.load(sys.stdin)['certificateArn'])")
+          aws iot attach-thing-principal --thing-name Test_Demo_On_Git_Action --principal $certificateArn
+          aws iot create-role-alias --role-alias role-alias-git-action --role-arn arn:aws:iam::707737545917:role/freertos-github-actions --credential-duration-seconds 3600
+          aws iot attach-policy --policy-name role-alias-git-action --target $certificateArn
+          echo '#define democonfigAWS_IOT_ENDPOINT "'$(aws iot describe-endpoint --endpoint-type iot:CredentialProvider | python3 -c "import sys, json; print(json.load(sys.stdin)['endpointAddress'])")'"' >> demo_config.h
+
       - name: Configure coreHTTP Demos
         shell: bash
         working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator
@@ -426,9 +439,9 @@ jobs:
         shell: bash
         working-directory: FreeRTOS-Plus/Demo/coreMQTT_Windows_Simulator/MQTT_Basic_TLS
         run: |
-          echo '#define democonfigROOT_CA_PEM \' >> demo_config.h
-          sed 's/.*/"&\\n"\\/' ${{ steps.generate-credentials.outputs.root-ca-cert-path }} >> root_ca_cert.txt
-          sed '$ s/.$//' root_ca_cert.txt >> demo_config.h
+          echo '#define democonfigROOT_CA_PEM "'$(cat ${{ steps.generate-credentials.outputs.root-ca-cert-path }})'"' >> demo_config.h
+          # sed 's/.*/"&\\n"\\/' ${{ steps.generate-credentials.outputs.root-ca-cert-path }} >> root_ca_cert.txt
+          # sed '$ s/.$//' root_ca_cert.txt >> demo_config.h
           echo '#define democonfigCLIENT_IDENTIFIER "mqtt_demo_test"' >>  demo_config.h
           echo '#define democonfigMQTT_BROKER_ENDPOINT "127.0.0.1"' >> demo_config.h
           echo '#define democonfigMQTT_BROKER_PORT ( 8883 )' >> demo_config.h
