@@ -97,74 +97,6 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          role-to-assume: arn:aws:iam::707737545917:role/freertos-github-actions
-          aws-region: ${{ env.AWS_REGION }}
-          managed-session-policies: |
-            arn:aws:iam::aws:policy/AmazonS3FullAccess
-            arn:aws:iam::aws:policy/AWSIoTFullAccess
-          inline-session-policy: >-
-            {
-            "Version": "2012-10-17",
-            "Statement": [
-              {
-                "Sid":"Statement1",
-                "Effect":"Allow",
-                "Action":"s3:GetObject",
-                "Resource":"arn:aws:s3:::BUCKET_NAME/*"
-              },
-              {
-                "Sid": "Statement2",
-                "Effect": "Allow",
-                "Action": [
-                    "iam:GetRole",
-                    "iam:PassRole"
-                ],
-                "Resource": "arn:aws:iam::707737545917:role/freertos-github-actions"
-              }
-              ]
-            }
-
-      - name: Get AWS Root CA
-        shell: bash
-        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/Common
-        run: |
-          curl https://www.amazontrust.com/repository/AmazonRootCA1.pem >> root_ca.txt
-          sed 's/.*/"&\\n"\\/' root_ca.txt >> root_ca_cert.txt
-
-      - name: Configure HTTP S3 Download Demo
-        shell: bash
-        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Download
-        run: |
-          aws iot create-keys-and-certificate --set-as-active --certificate-pem-outfile certificate_filename.pem --public-key-outfile public_filename.key --private-key-outfile private_filename.key >> iot_cert.txt
-          certificateArn=$(cat iot_cert.txt | python3 -c "import sys, json; print(json.load(sys.stdin)['certificateArn'])")
-          aws iot attach-thing-principal --thing-name Test_Demo_On_Git_Action --principal $certificateArn
-          aws iot create-role-alias --role-alias role-alias-git-action --role-arn arn:aws:iam::707737545917:role/freertos-github-actions --credential-duration-seconds 3600
-          aws iot attach-policy --policy-name Thing_Policy_For_Git-Action --target $certificateArn
-          endPoint=$(aws iot describe-endpoint --endpoint-type iot:CredentialProvider | python3 -c "import sys, json; print(json.load(sys.stdin)['endpointAddress'])")
-          echo '#define democonfigAWS_IOT_ENDPOINT "'$endPoint'"' >> demo_config.h
-          echo '#define democonfigS3_BUCKET_NAME "'${{ env.BUCKET_NAME }}'"' | tee -a demo_config.h
-          echo '#define democonfigS3_BUCKET_REGION "'${{ env.AWS_REGION }}'"' >> demo_config.h
-          echo '#define democonfigS3_OBJECT_NAME "'${{ env.OBJECT_NAME }}'"' >> demo_config.h
-          echo '#define democonfigIOT_CREDENTIAL_PROVIDER_ROLE "role-alias-git-action"' >> demo_config.h
-          echo '#define democonfigIOT_THING_NAME "Test_Demo_On_Git_Action"' >> demo_config.h
-          echo '#define democonfigS3_ROOT_CA_PEM \' >> demo_config.h
-          sed '$ s/.$//' ../Common/root_ca_cert.txt >> demo_config.h
-          echo '#define democonfigIOT_CRED_PROVIDER_ROOT_CA_PEM \' >> demo_config.h
-          sed '$ s/.$//' ../Common/root_ca_cert.txt >> demo_config.h
-          echo '#define democonfigCLIENT_CERTIFICATE_PEM \' >> demo_config.h
-          sed 's/.*/"&\\n"\\/' certificate_filename.pem >> device_cert.txt
-          sed '$ s/.$//' device_cert.txt >> demo_config.h
-          echo '#define democonfigCLIENT_PRIVATE_KEY_PEM \' >> demo_config.h
-          sed 's/.*/"&\\n"\\/' private_filename.key >> device_priv_key.txt
-          sed '$ s/.$//' device_priv_key.txt >> demo_config.h
-
-      - name: Build HTTP S3 Download Demo
-        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Download
-        run: msbuild http_s3_download_demo.sln -t:rebuild
-
       - name: Install meson
         run: pip install meson
 
@@ -247,6 +179,43 @@ jobs:
           success-line: "Demo completed successfully"
           retry-attempts: 2
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::707737545917:role/freertos-github-actions
+          aws-region: ${{ env.AWS_REGION }}
+          managed-session-policies: |
+            arn:aws:iam::aws:policy/AmazonS3FullAccess
+            arn:aws:iam::aws:policy/AWSIoTFullAccess
+          inline-session-policy: >-
+            {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid":"Statement1",
+                "Effect":"Allow",
+                "Action":"s3:GetObject",
+                "Resource":"arn:aws:s3:::BUCKET_NAME/*"
+              },
+              {
+                "Sid": "Statement2",
+                "Effect": "Allow",
+                "Action": [
+                    "iam:GetRole",
+                    "iam:PassRole"
+                ],
+                "Resource": "arn:aws:iam::707737545917:role/freertos-github-actions"
+              }
+              ]
+            }
+
+      - name: Get AWS Root CA
+        shell: bash
+        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/Common
+        run: |
+          curl https://www.amazontrust.com/repository/AmazonRootCA1.pem >> root_ca.txt
+          sed 's/.*/"&\\n"\\/' root_ca.txt >> root_ca_cert.txt
+
       - name: Copy text file to S3
         working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/Common
         run: |
@@ -304,28 +273,46 @@ jobs:
           success-line: "Demo completed successfully"
           retry-attempts: 2
 
-      # - name: Configure coreHTTP Demos
-      #   shell: bash
-      #   working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator
-      #   run: |
-      #     echo '#ifndef DEMO_CONFIG_H_TEST_BUILD' | tee -a */demo_config.h
-      #     echo '    #define DEMO_CONFIG_H_TEST_BUILD' | tee -a */demo_config.h
-      #     echo '    #define democonfigSERVER_HOSTNAME ""' | tee -a */demo_config.h
-      #     echo '    #define democonfigAWS_IOT_ENDPOINT ""' | tee -a */demo_config.h
-      #     echo '    #define democonfigROOT_CA_PEM ""' | tee -a */demo_config.h
-      #     echo '    #define democonfigCLIENT_CERTIFICATE_PEM ""' | tee -a */demo_config.h
-      #     echo '    #define democonfigCLIENT_PRIVATE_KEY_PEM ""' | tee -a */demo_config.h
-      #     echo '    #define democonfigIOT_CRED_PROVIDER_ROOT_CA_PEM ""' | tee -a */demo_config.h
-      #     echo '    #define democonfigIOT_CREDENTIAL_PROVIDER_ENDPOINT ""' | tee -a */demo_config.h
-      #     echo '    #define democonfigIOT_CREDENTIAL_PROVIDER_ROLE ""' | tee -a */demo_config.h
-      #     echo '    #define democonfigIOT_THING_NAME ""' | tee -a */demo_config.h
-      #     echo '    #define democonfigS3_PRESIGNED_GET_URL "ABCDEF"' | tee -a */demo_config.h
-      #     echo '    #define democonfigS3_PRESIGNED_PUT_URL "ABCDEF"' | tee -a */demo_config.h
-      #     echo '    #define democonfigS3_ROOT_CA_PEM ""' | tee -a */demo_config.h
-      #     echo '    #define democonfigS3_BUCKET_NAME ""' | tee -a */demo_config.h
-      #     echo '    #define democonfigS3_BUCKET_REGION ""' | tee -a */demo_config.h
-      #     echo '    #define democonfigS3_OBJECT_NAME ""' | tee -a */demo_config.h
-      #     echo '#endif /* DEMO_CONFIG_H_TEST_BUILD */' | tee -a */demo_config.h
+      - name: Configure HTTP S3 Download Demo
+        shell: bash
+        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Download
+        run: |
+          aws iot create-keys-and-certificate --set-as-active --certificate-pem-outfile certificate_filename.pem --public-key-outfile public_filename.key --private-key-outfile private_filename.key >> iot_cert.txt
+          certificateArn=$(cat iot_cert.txt | python3 -c "import sys, json; print(json.load(sys.stdin)['certificateArn'])")
+          aws iot attach-thing-principal --thing-name Test_Demo_On_Git_Action --principal $certificateArn
+          aws iot attach-policy --policy-name Thing_Policy_For_Git-Action --target $certificateArn
+          endPoint=$(aws iot describe-endpoint --endpoint-type iot:CredentialProvider | python3 -c "import sys, json; print(json.load(sys.stdin)['endpointAddress'])")
+          echo '#define democonfigIOT_CREDENTIAL_PROVIDER_ENDPOINT "'$endPoint'"' >> demo_config.h
+          echo '#define democonfigS3_BUCKET_NAME "'${{ env.BUCKET_NAME }}'"' >> demo_config.h
+          echo '#define democonfigS3_BUCKET_REGION "'${{ env.AWS_REGION }}'"' >> demo_config.h
+          echo '#define democonfigS3_OBJECT_NAME "'${{ env.OBJECT_NAME }}'"' >> demo_config.h
+          echo '#define democonfigIOT_CREDENTIAL_PROVIDER_ROLE "role-alias-git-action"' >> demo_config.h
+          echo '#define democonfigIOT_THING_NAME "Test_Demo_On_Git_Action"' >> demo_config.h
+          echo '#define democonfigS3_ROOT_CA_PEM \' >> demo_config.h
+          sed '$ s/.$//' ../Common/root_ca_cert.txt >> demo_config.h
+          echo '#define democonfigIOT_CRED_PROVIDER_ROOT_CA_PEM \' >> demo_config.h
+          sed '$ s/.$//' ../Common/root_ca_cert.txt >> demo_config.h
+          echo '#define democonfigCLIENT_CERTIFICATE_PEM \' >> demo_config.h
+          sed 's/.*/"&\\n"\\/' certificate_filename.pem >> device_cert.txt
+          sed '$ s/.$//' device_cert.txt >> demo_config.h
+          echo '#define democonfigCLIENT_PRIVATE_KEY_PEM \' >> demo_config.h
+          sed 's/.*/"&\\n"\\/' private_filename.key >> device_priv_key.txt
+          sed '$ s/.$//' device_priv_key.txt >> demo_config.h
+
+      - name: Build HTTP S3 Download Demo
+        id: build-http-s3-download-demo
+        working-directory: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Download
+        run: msbuild http_s3_download_demo.sln -t:rebuild -property:Configuration=Debug -property:Platform=x64 -m
+
+      - name: Run and monitor HTTP S3 Download Demo
+        if: success() || failure() && steps.build-http-s3-download-demo.outcome == 'success'
+        uses: FreeRTOS/CI-CD-GitHub-Actions/executable-monitor@main
+        with:
+          exe-path: FreeRTOS-Plus/Demo/coreHTTP_Windows_Simulator/HTTP_S3_Download/x64/Debug/CoreHTTP_S3_Download.exe
+          log-dir: demo_run_logs
+          timeout-seconds: 300
+          success-line: "Demo completed successfully"
+          retry-attempts: 2
 
   winsim_corePKCS11:
     name: corePKCS11 WinSim Demos
