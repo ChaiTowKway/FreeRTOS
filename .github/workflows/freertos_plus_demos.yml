@@ -2,6 +2,8 @@ name: Build FreeRTOS+ Demos
 on:
   pull_request_target:
     types: [assigned, opened, synchronize, reopened]
+  push:
+    branches: ["**"]
 
 env:
   BUCKET_NAME : "freertos-demos-on-github-action"
